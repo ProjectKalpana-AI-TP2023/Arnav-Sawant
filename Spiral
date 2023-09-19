@@ -1,31 +1,44 @@
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
+??Spiral motion for ROS2
+#include <chrono>
+#include <memory>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 
-int main(int argc, char** argv)
+using namespace std;
+
+class SpiralMotion : public rclcpp::Node //using derived classes here 
 {
-    ros::init(argc, argv, "turtle_spiral");
-    ros::NodeHandle nh;
-
-    ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("/turtle1/cmd_vel", 10);
-
-    double linear_velocity = 0.5;
-    const double angular_velocity = 2.0;
-    const double increment = 0.01;
-
-    ros::Rate rate(10);  // 10 Hz
-
-    while (ros::ok())
+public:
+    SpiralMotion() : Node("......Starting Spiral motion....."), linear_velocity(0.5), increment(0.01) //contructor initialization
     {
-        geometry_msgs::Twist msg;
-        msg.linear.x = linear_velocity;
-        msg.angular.z = angular_velocity;
-
-        pub.publish(msg);
-
-        linear_velocity += increment;
-
-        rate.sleep();
+        publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/turtle1/cmd_vel", 10); //pointer calling like the dot function
+        timer_ = this->create_wall_timer(
+            chrono::milliseconds(100),
+            bind(&SpiralMotion::timer_callback, this));
     }
 
+private:
+    void timer_callback()
+    {
+        auto message = geometry_msgs::msg::Twist();
+        message.linear.x = linear_velocity; //(need to understad this part)
+        message.angular.z = 1.0;  // Constant angular velocity
+
+        publisher_->publish(message);
+
+        linear_velocity += increment;
+    }
+
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    double linear_velocity;
+    const double increment;
+};
+
+int main(int argc, char * argv[])  //the second argument is pointer
+{    cout<<"Task2:create spiral turtle motion in ROS2" <<endl;
+    rclcpp::init(argc, argv);
+    rclcpp::spin(make_shared<SpiralMotion>());
+    rclcpp::shutdown();
     return 0;
 }
